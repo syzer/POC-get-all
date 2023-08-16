@@ -7,7 +7,7 @@ POC of getAll()
 ```
 npm install
 npm run server
-open http://localhost:8080
+open http://localhost:56345
 ```
 
 ![example](./example.png)
