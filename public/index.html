@@ -1,0 +1,44 @@
+<body>
+<h1>check console</h1><
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ramda/0.29.0/ramda.min.js" integrity="sha512-5x/n+aOg68Z+O/mq3LW2pC2CvEBSgLl5aLlOJa87AlYM1K8b8qsZ7NTHLe3Hu56aS2W0rgEgVCFA3RM12IXAGw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  const {splitEvery, pipe: _, tap, range, last, prop, concat} = R
+  const perPage = 10
+  const posts = (pageNum = 1) => `http://localhost:56345/posts?_limit=${perPage}&_page=${pageNum}`
+  const expected = perPage * 5
+  const maxNetilionToDownload = 100000
+  const getAll = (url) => {
+    let thatsAllFolks = false
+    return _(
+      () => range(1, maxNetilionToDownload), // equivalent to Array.from({ length: maxNetilionToDownload }, (_, i) => i + 1)
+      splitEvery(5), // 5 requests at a time
+      batches => batches.reduce((promise, batch) =>
+        promise.then(async (dataSoFar) => {
+          if (thatsAllFolks) {
+            return dataSoFar
+          }
+          const binResult = await Promise.all(
+            batch.map(pageNum =>
+              fetch(url(pageNum))
+                .then(res => res.ok
+                  ? res.json()
+                  : console.error(res.status, res.statusText) || Promise.resolve([]))))  // when 429 we will stop
+            .then(arrs => arrs.flat())
+
+          if (binResult.length < expected) {
+            thatsAllFolks = true
+          }
+          return dataSoFar.concat(binResult)
+
+        }), Promise.resolve([])),
+    )()
+  }
+  getAll(posts).then(_(
+    tap(console.debug),
+    last,
+    prop('id'),
+    concat('Max number of posts to download: '),
+  ))
+</script>
